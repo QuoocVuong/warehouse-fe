@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaFilter, FaPlus, FaEllipsisV, FaRegHeart } from 'react-icons/fa';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
+// import SideBar from '../components/SideBar';
 
 const ProductsPage = () => {
   const [filterOptions, setFilterOptions] = useState({
@@ -32,19 +34,7 @@ const ProductsPage = () => {
     'Có biến thể',
     'Tên mục',
     '456',
-    // 'lj',
-    // 'khẩu trang',
-    // 'lkmlk',
-    // 'HONGCO',
-    // 'nhom6',
-    // 'Tunne',
-    // 'Micro',
-    // 'sectoy',
-    // 'ao khoac',
-    // '576373467',
-    // 'Xe máy',
-    // 'Iphone',
-    // '003',
+   
   ];
 
   const toggleFilter = (option) => {
@@ -53,11 +43,24 @@ const ProductsPage = () => {
       [option]: !prevOptions[option],
     }));
   };
-
-  return (
-    <main className="flex-1 p-8 bg-gray-100">
+return (
+  <div className="flex flex-col min-h-screen mx-auto max-w-[1200px]">
+    <header className="bg-gray-100 p-4 sticky top-0 z-10">
       <Header />
-      <div className="bg-white p-6 rounded-lg shadow-md">
+    </header>
+
+    <div className="flex-grow flex justify-center items-center"> {/* Bọc main và thêm flex-grow, justify-center, items-center */}
+      <main className="flex  p-4 "> {/* Bỏ items-center từ main */}
+        <div className="flex gap-4 h-full w-full items-center">
+          {/* Sidebar - Sticky và top-0 */}
+          {/* <div className="w-[200px] sticky top-0"> 
+            <SideBar className="bg-gray-200 p-4 rounded-md shadow-md" /> 
+          </div> */}
+
+          {/* Khu vực chính */}
+          <div className="flex-1 ">
+            <div className="space-y-4">
+            <div className="bg-white p-6 rounded-lg shadow-md">
         {/* Title and Buttons */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-800">Sản phẩm</h2>
@@ -236,8 +239,17 @@ const ProductsPage = () => {
           <div className="text-sm text-gray-500 mt-4">20 trong tổng số 104</div>
         </div>
       </div>
-    </main>
-  );
-};
+            </div>
+          </div>
+        </div>
+      </main>
+    </div> {/* Kết thúc phần tử bọc main */}
+
+    <footer className="bg-gray-300 p-4 sticky  z-10">
+      <Footer />
+    </footer>
+  </div>
+);
+}
 
 export default ProductsPage;

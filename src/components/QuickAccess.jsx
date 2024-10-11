@@ -16,12 +16,12 @@ const QuickAccess = () => {
   return (
     <div className="bg-white p-4 rounded-lg shadow-md ">
       <h2 className="text-lg font-bold mb-4">Quick Access</h2>
-      <div className="grid grid-cols-3 gap-4">
-        {accessItems.map((item, index) => (
+        <div className="grid grid-cols-3 gap-4">
+         {accessItems.map((item, index) => (
           <Link 
             key={index} 
             to={item.link} 
-            className="bg-gray-100 p-4 rounded-lg hover:shadow-lg transform hover:scale-105 transition duration-300 ease-in-out no-underline" 
+            className="bg-gray-100 p-4 rounded-lg shadow-lg transform hover:shadow-2xl hover:scale-105 transition duration-300 ease-in-out no-underline"
           >
             <div className="flex justify-between items-center">
               <h3 className="text-md font-bold text-gray-800">{item.title}</h3> 

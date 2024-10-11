@@ -12,31 +12,33 @@ function Home() {
         <Header />
       </header>
 
-      <main className="flex flex-grow p-4 overflow-y-auto"> 
-        <div className="flex gap-4 h-full sticky top-0 items-center"> {/* Thêm items-center */}
-          {/* Sidebar */}
-          <div className="w-[200px]">
-            <SideBar className="bg-gray-200 p-4 rounded-md shadow-md sticky top-[4rem]" /> 
-          </div>
+      <div className="flex-grow flex justify-center items-center"> {/* Bọc main và thêm flex-grow, justify-center, items-center */}
+        <main className="flex  p-4 "> {/* Bỏ items-center từ main */}
+          <div className="flex gap-4 h-full w-full items-center">
+            {/* Sidebar - Sticky và top-0 */}
+            <div className="w-[200px] sticky top-0"> 
+              <SideBar className="bg-gray-200 p-4 rounded-md shadow-md" /> 
+            </div>
 
-          {/* Khu vực chính - Cuộn riêng */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="space-y-4">
-              <div className="bg-white p-4 rounded-md shadow-md">
-                <Chart />
-              </div>
-              <div className="bg-white p-4 rounded-md shadow-md">
-                <QuickAccess />
-              </div>
-              <div className="bg-white p-4 rounded-md shadow-md">
-                <MastersAndReports />
+            {/* Khu vực chính */}
+            <div className="flex-1 ">
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-md shadow-md">
+                  <Chart />
+                </div>
+                <div className="bg-white p-4 rounded-md shadow-md">
+                  <QuickAccess />
+                </div>
+                <div className="bg-white p-4 rounded-md shadow-md">
+                  <MastersAndReports />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div> {/* Kết thúc phần tử bọc main */}
 
-      <footer className="bg-gray-300 p-4 max-h-[150px] sticky bottom-[-150px] z-10">
+      <footer className="bg-gray-300 p-4 sticky  z-10">
         <Footer />
       </footer>
     </div>

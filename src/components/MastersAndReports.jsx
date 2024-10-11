@@ -49,9 +49,9 @@ const MastersAndReports = () => {
         {mastersData.map((section, index) => (
           <div
             key={index}
-            className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transform hover:scale-105 transition duration-300 ease-in-out"
+            className="bg-white p-4 rounded-lg shadow-lg transform hover:shadow-2xl hover:scale-105 transition duration-300 ease-in-out" 
           >
-            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center"> 
+            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
               <svg className="w-5 h-5 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
               </svg>
