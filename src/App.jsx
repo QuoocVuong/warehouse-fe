@@ -10,9 +10,21 @@ import AddProductPage from './pages/AddProductPage';
 //import ItemGroups from "./pages/ItemGroups";
 import  ItemGroupsPage from './pages/ItemGroupsPage';
 import StockItemsReport from './pages/StockItemsReport';
+import { useEffect } from 'react';
+import productApi from './api/productsApi';
 
 
 function App() {
+  useEffect (() => {
+    const fetchProduct = async () => {
+      const productList = await productApi.getAll();
+      console.log(productList);
+    }
+   
+    fetchProduct ();
+  },[]);
+
+
   return (
     <Router>
       <div className="App">
@@ -25,7 +37,7 @@ function App() {
           <Route path="/add-product" element={<AddProductPage />} />
           <Route path="/item-groups" element={<ItemGroupsPage />} />  
           <Route path="/stock-items-report" element={<StockItemsReport />} />  
-          
+      
           
         </Routes>
       </div>

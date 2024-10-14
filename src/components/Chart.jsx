@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import PropTypes from 'prop-types'; // Import PropTypes
 
 const Chart = () => {
   const [activeIndex, setActiveIndex] = useState(null);
@@ -25,6 +26,19 @@ const Chart = () => {
     }
 
     return null;
+  };
+   // Khai báo kiểu dữ liệu cho props của CustomTooltip
+   CustomTooltip.propTypes = {
+    active: PropTypes.bool,
+    payload: PropTypes.arrayOf(
+      PropTypes.shape({
+        payload: PropTypes.shape({
+          stockValue: PropTypes.string.isRequired, 
+          // ... các thuộc tính khác của payload 
+        }).isRequired,
+      })
+    ),
+    label: PropTypes.string,
   };
 
   const handleBarHover = (data, index) => {
