@@ -34,6 +34,7 @@ function Home() {
                 </div>
               </div>
             </div>
+            
           </div>
         </main>
       </div> {/* Kết thúc phần tử bọc main */}

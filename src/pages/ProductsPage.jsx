@@ -1,255 +1,373 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { FaFilter, FaPlus, FaEllipsisV, FaRegHeart } from 'react-icons/fa';
+import { FaFilter, FaPlus, FaEllipsisV, FaChevronRight, FaChevronLeft, FaCaretDown } from 'react-icons/fa';
+import axios from 'axios';
 import Header from '../components/Header';
-import Footer from '../components/Footer';
-// import SideBar from '../components/SideBar';
+import { BsChevronDown } from 'react-icons/bs';
+import moment from 'moment';
 
 const ProductsPage = () => {
   const [filterOptions, setFilterOptions] = useState({
-    'Được Giao Cho': false,
-    'Được Tạo Bởi': false,
-    'Nhân': false,
-    'Hiện Nhân': false,
+    tenSanPham: '',
+    status: '',
+    tenNhom: '',
   });
 
-  const productData = [
-    { trangThai: 'Đã bật', nhomHang: '09', ten: '456', time: '3M' },
-    { trangThai: 'Đã bật', nhomHang: '09', ten: 'lj', time: '3M' },
-    { trangThai: 'Đã bật', nhomHang: '09', ten: '1777', time: '2M' },
-    { trangThai: 'Đã bật', nhomHang: '09', ten: 'kjnkjn', time: '3M' },
-    { trangThai: 'Đã bật', nhomHang: '09', ten: 'CD213298', time: '3M' },
-    { trangThai: 'Đã bật', nhomHang: '12', ten: '22a23', time: '3M' },
-    { trangThai: 'Đã bật', nhomHang: '12', ten: 'CD313', time: '3M' },
-    { trangThai: 'Đã bật', nhomHang: '12', ten: 'Tunee', time: '3M' },
-    { trangThai: 'Đã bật', nhomHang: '12', ten: 'sectoy', time: '3M' },
-    { trangThai: 'Đã bật', nhomHang: '12', ten: 'quan ao', time: '3M' },
-    { trangThai: 'Đã bật', nhomHang: '12', ten: '576373467', time: '3M' },
-    { trangThai: 'Đã bật', nhomHang: '123', ten: '99', time: '2M' },
-    { trangThai: 'Đã bật', nhomHang: '123', ten: '002', time: '1w' },
-    { trangThai: 'Đã bật', nhomHang: '123', ten: '003', time: '2M' },
-  ];
-
-  const filterItems = [
-    'Có biến thể',
-    'Tên mục',
-    '456',
-   
-  ];
-
-  const toggleFilter = (option) => {
-    setFilterOptions((prevOptions) => ({
-      ...prevOptions,
-      [option]: !prevOptions[option],
-    }));
+  const [showSidebar, setShowSidebar] = useState(false); // Sidebar ẩn mặc định
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [allNhomHangs, setAllNhomHangs] = useState([]); // Khai báo state allNhomHangs
+  const [showDropdown, setShowDropdown] = useState(null); 
+  const handleDropdownToggle = (productId) => {
+    setShowDropdown(showDropdown === productId ? null : productId);
   };
-return (
-  <div className="flex flex-col min-h-screen mx-auto max-w-[1200px]">
-    <header className="bg-gray-100 p-4 sticky top-0 z-10">
+
+
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        const response = await axios.get('http://localhost:8080/v1/products');
+        setProducts(response.data.data);
+      } catch (error) {
+        setError(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const fetchNhomHangs = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/v1/itemgroups');
+        setAllNhomHangs(response.data.data);
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách nhóm hàng:', error);
+      }
+    };
+
+    fetchProducts();
+    fetchNhomHangs();
+  }, []);
+
+  const handleFilterChange = (name, value) => {
+    setFilterOptions({
+      ...filterOptions,
+      [name]: value,
+    });
+  };
+
+  const filteredProducts = products.filter((product) => {
+    const matchesTenSanPham = !filterOptions.tenSanPham || product.tenSanPham.toLowerCase().includes(filterOptions.tenSanPham.toLowerCase());
+    const matchesStatus = !filterOptions.status || product.status === filterOptions.status;
+    const matchesNhomHang = !filterOptions.tenNhom || (product.nhomHang && product.nhomHang.tenNhom === filterOptions.tenNhom);
+
+    return matchesTenSanPham && matchesStatus && matchesNhomHang;
+  });
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setSelectedProduct(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownRef]);
+  const handleDeleteProduct = async (productId) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+      try {
+        await axios.delete(`http://localhost:8080/v1/products/${productId}`);
+
+        // Cập nhật trực tiếp trạng thái sản phẩm trong mảng `products`
+        setProducts((prevProducts) => prevProducts.map((product) => 
+          product.id === productId ? { ...product, status: 'deleted' } : product
+        ));
+
+        setShowDropdown(null);
+      } catch (error) {
+        console.error('Lỗi khi xóa sản phẩm:', error);
+        alert('Có lỗi xảy ra khi xóa sản phẩm. Vui lòng thử lại.');
+      }
+    }
+  };
+  // const handleDeleteProduct = async (productId) => {
+  //   if (window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+  //     try {
+  //       await axios.delete(`http://localhost:8080/v1/products/${productId}`);
+  
+  //       // Gọi lại API để lấy danh sách sản phẩm mới nhất
+  //       const response = await axios.get('http://localhost:8080/v1/products');
+  //       setProducts(response.data.data);
+  
+  //       setShowDropdown(null);
+  //     } catch (error) {
+  //       console.error('Lỗi khi xóa sản phẩm:', error);
+  //       alert('Có lỗi xảy ra khi xóa sản phẩm. Vui lòng thử lại.');
+  //     }
+  //   }
+  // };
+
+  // Thêm useEffect để re-render khi products thay đổi
+  useEffect(() => {
+    // Không cần code gì trong useEffect, chỉ cần dependency là products
+  }, [products]);
+
+
+  return (
+    <div className="flex flex-col min-h-screen mx-auto max-w-[1200px] bg-gray-100">
       <Header />
-    </header>
 
-    <div className="flex-grow flex justify-center items-center"> {/* Bọc main và thêm flex-grow, justify-center, items-center */}
-      <main className="flex  p-4 "> {/* Bỏ items-center từ main */}
-        <div className="flex gap-4 h-full w-full items-center">
-          {/* Sidebar - Sticky và top-0 */}
-          {/* <div className="w-[200px] sticky top-0"> 
-            <SideBar className="bg-gray-200 p-4 rounded-md shadow-md" /> 
-          </div> */}
-
-          {/* Khu vực chính */}
-          <div className="flex-1 ">
-            <div className="space-y-4">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-        {/* Title and Buttons */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">Sản phẩm</h2>
-          <div className="flex">
-            <button className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md mr-2 flex items-center transition duration-150 ease-in-out">
-              <FaFilter className="mr-2 text-sm" /> Xem Kiểu Danh Sách
-              <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            <button className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md mr-2 transition duration-150 ease-in-out">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-            <button className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md mr-2 transition duration-150 ease-in-out">
-              <FaEllipsisV className="text-sm" />
-            </button>
-            <Link to="/add-product" className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md flex items-center transition duration-150 ease-in-out">
+      <div className="flex px-4 py-12 mx-auto max-w-7xl">
+        <div className="w-full bg-white p-6 rounded-lg shadow-md">
+          {/* Tiêu đề và nút */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-800">Sản phẩm</h2>
+            {/* Nút thêm sản phẩm */}
+            <Link
+              to="/add-product"
+              className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md flex items-center transition duration-150 ease-in-out"
+            >
               <FaPlus className="mr-2 text-sm" /> Thêm Sản phẩm
             </Link>
           </div>
-        </div>
 
-        {/* Filters and Search */}
-        <div className="flex mb-6">
-          {/* Left Filters */}
-          <div className="w-1/4 mr-4">
-            <h3 className="text-md font-bold text-gray-700 mb-2">Lọc Theo</h3>
-            <ul className="space-y-2">
-              {Object.keys(filterOptions).map((option) => (
-                <li key={option}>
-                  <button
-                    onClick={() => toggleFilter(option)}
-                    className={`flex items-center w-full px-3 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out 
-                      ${filterOptions[option] ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}
-                  >
-                    <svg
-                      className={`w-4 h-4 mr-2 ${filterOptions[option] ? 'text-blue-500' : 'text-gray-400'}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      {filterOptions[option] ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      )}
-                    </svg>
-                    {option}
-                  </button>
-                </li>
-              ))}
-            </ul>
-
-            {/* Save Filter Section */}
-            <div className="mt-4">
-              <h3 className="text-md font-bold text-gray-700 mb-2">Lưu Bộ Lọc</h3>
-              <input 
-                type="text" 
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out" 
-                placeholder="Tên Bộ Lọc" 
+          {/* Lọc */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {/* Lọc theo tên sản phẩm */}
+            <div>
+              <label htmlFor="tenSanPham" className="block text-sm font-medium text-gray-600">
+                Tên Sản Phẩm
+              </label>
+              <input
+                type="text"
+                id="tenSanPham"
+                name="tenSanPham"
+                className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                placeholder="Nhập tên sản phẩm"
+                onChange={(e) => handleFilterChange('tenSanPham', e.target.value)}
               />
             </div>
-          </div>
 
-          {/* Right Filters */}
-          <div className="w-3/4 flex space-x-4">
-            {/* Input columns */}
-            {[
-              ['Tên', 'Có biến thể', 'Tên mục'], 
-              ['Biến thể của'], 
-              ['Tên mục', 'Nhóm hàng'],
-            ].map((column, columnIndex) => (
-              <div key={columnIndex} className="flex flex-col w-1/3">
-                {column.map((placeholder, index) => (
-                  <div key={index} className="mb-2">
-                    <input
-                      type="text"
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out"
-                      placeholder={placeholder}
-                    />
-                    {placeholder === 'Có biến thể' && (
-                      <label className="inline-flex items-center ml-2">
-                        <input type="checkbox" className="form-checkbox h-4 w-4 text-blue-600" />
-                      </label>
-                    )}
-                  </div>
+            {/* Lọc theo trạng thái */}
+            <div>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-600">
+                Trạng Thái
+              </label>
+              <select
+                id="status"
+                name="status"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+              >
+                <option value="">Tất cả</option>
+                <option value="selling">Đang bán</option>
+                <option value="out_of_stock">Hết hàng</option>
+                <option value="deleted">Đã xóa</option>
+              </select>
+            </div>
+
+            {/* Lọc theo nhóm hàng */}
+            <div>
+              <label htmlFor="nhomHang" className="block text-sm font-medium text-gray-600">
+                Nhóm Hàng
+              </label>
+              <select
+                id="nhomHang"
+                name="nhomHang"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                onChange={(e) => handleFilterChange('tenNhom', e.target.value)}
+              >
+                <option value="">Tất cả</option>
+                {allNhomHangs.map((nhomHang) => (
+                  <option key={nhomHang.id} value={nhomHang.tenNhom}>
+                    {nhomHang.tenNhom}
+                  </option>
                 ))}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Additional Filters with Heart Icons */}
-        <div className="w-1/4 mr-4">
-          <ul className="space-y-2">
-            {filterItems.map((item, index) => (
-              <li key={index} className="flex items-center">
-                <input type="checkbox" className="form-checkbox h-4 w-4 text-blue-600 mr-2" />
-                <span className="text-sm text-gray-700">
-                  <FaRegHeart className="text-red-500 mr-1 inline-block" />
-                  {item}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Active Filters and Group Button */}
-        <div className="flex items-center mb-6">
-          <div className="bg-blue-100 text-blue-700 font-medium py-2 px-4 rounded-md mr-2 flex items-center">
-            <FaFilter className="mr-2 text-sm" /> 1 Bộ Lọc Sử Dụng
-          </div>
-          <div className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md flex items-center transition duration-150 ease-in-out">
-            <FaFilter className="mr-2 text-sm" /> Nhóm hàng
-          </div>
-        </div>
-
-        {/* Product List Table */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 table-fixed"> {/* Added table-fixed */}
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Trạng Thái
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nhóm hàng
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tên
-                </th>
-                <th scope="col" className="w-24 px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                </th>
-                <th scope="col" className="w-24 px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                </th>
-                <th scope="col" className="w-24 px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {productData.map((product, index) => (
-                <tr key={index}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                      • {product.trangThai}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {product.nhomHang}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {product.ten}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                    -
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                    {product.time} <svg className="w-4 h-4 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg> 0 <svg className="w-4 h-4 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                    </svg> 0
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link to={`/edit-product/${product.id}`} className="text-blue-500 hover:text-blue-700 transition duration-150 ease-in-out">
-                      Chỉnh sửa
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="text-sm text-gray-500 mt-4">20 trong tổng số 104</div>
-        </div>
-      </div>
+              </select>
             </div>
           </div>
-        </div>
-      </main>
-    </div> {/* Kết thúc phần tử bọc main */}
+{/* Bảng danh sách sản phẩm */}
+          {isLoading ? (
+            <div className="text-center py-4">Đang tải dữ liệu...</div>
+          ) : error ? (
+            <div className="text-center py-4 text-red-500">
+              Lỗi: {error.message}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full whitespace-nowrap bg-white divide-y divide-gray-200 rounded-lg shadow-md">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="relative px-6 py-3">
+                      <span className="sr-only">Edit</span>
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Trạng thái
+                    </th> 
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Mã hàng
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Nhóm hàng
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Tên
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Đơn vị tính
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Cổ phiếu mở đầu
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Định giá
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Tỷ giá bán hàng tiêu chuẩn
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Chỉ định loại tài sản
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Hạn sử dụng
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredProducts.map((product, index) => (
+                    <React.Fragment key={index}>
+                      <tr
+                        key={index}
+                        className="text-gray-500 hover:text-gray-700"
+                        onClick={() => setSelectedProduct(product)} 
+                      >
+                        {/* Thêm ...  */}
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
+                          <button
+                            onClick={() => handleDropdownToggle(product.id)}
+                            className={`text-gray-400 hover:text-gray-500 ${showDropdown === product.id ? 'text-blue-500' : ''}`}
+                          >
+                            <FaCaretDown className="w-5 h-5" />
+                          </button>
 
-    <footer className="bg-gray-300 p-4 sticky  z-10">
-      <Footer />
-    </footer>
-  </div>
-);
-}
+                          {/* Dropdown */}
+                          {showDropdown === product.id && (
+                            <div className="absolute left-9 transform  rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                              <div
+                                className="py-1"
+                                role="menu"
+                                aria-orientation="vertical"
+                                aria-labelledby="options-menu"
+                              >
+                                <Link
+                                  to={`/edit-product/${product.id}`}
+                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                                  role="menuitem"
+                                >
+                                  Chỉnh sửa
+                                </Link>
+                                <button 
+                                  onClick={() => handleDeleteProduct(product.id)}
+                                  className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 hover:text-red-900 text-center rounded-md"
+                                  role="menuitem"
+                                >
+                                  Xóa
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+                              ${product.status === 'selling' ? 'bg-green-100 text-green-800' : 
+                               (product.status === 'out_of_stock' ? 'bg-red-100 text-red-800' :
+                              (product.status === 'deleted' ? 'bg-red-700 text-white' : 
+                                'bg-gray-100 text-gray-800'))}
+                            `} 
+                          >
+                            • {product.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {product.maHang}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {product.nhomHang ? product.nhomHang.tenNhom : ''}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {product.tenSanPham}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {product.donViTinh}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {product.coPhieuMoDau}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {product.dinhGia}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {product.tyGiaBanHangTieuChuan}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {product.chiDinhLoaiTaiSan}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {product.hanSuDung
+                            ? moment(product.hanSuDung.split('T')[0]).format('DD/MM/YYYY') // Hoặc dùng moment(product.hanSuDung, 'YYYY-MM-DDTHH:mm:ssZ').format('DD/MM/YYYY')
+                            : ''}
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+              <div className="text-sm text-gray-500 mt-4">
+                 Tổng số {filteredProducts.length}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* <Footer /> */}
+    </div>
+  );
+};
 
 export default ProductsPage;

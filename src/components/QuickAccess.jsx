@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 const QuickAccess = () => {
   const accessItems = [
     { title: 'Sản phẩm', info: '104 Available', color: 'green', link: '/products' },
-    { title: 'Yêu cầu nguyên liệu', info: '1 Pending', color: 'yellow', link: '/material-requests' },
-    { title: 'Chứng từ kho', info: '', color: 'gray', link: '/warehouse-documents' },
+    { title: 'Nhóm hàng', info: '4 Available', color: 'green', link: '/item-groups' },
+    { title: 'Kho hàng', info: '2 Available', color: 'green', link: '/warehouse' },
     { title: 'Biên lai nhận hàng', info: '4 To Bill', color: 'yellow', link: '/goods-receipts' },
     { title: 'Phiếu giao hàng', info: '1 To Bill', color: 'yellow', link: '/delivery-orders' },
     { title: 'Số cái hàng tồn kho', info: '', color: 'gray', link: '/stock-items' },

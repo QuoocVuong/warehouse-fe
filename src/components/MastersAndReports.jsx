@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Link } from 'react-router-dom';
 
 const MastersAndReports = () => {
@@ -8,7 +8,7 @@ const MastersAndReports = () => {
       items: [
         { name: 'Sản phẩm', link: '/products' },
         { name: 'Nhóm hàng', link: '/item-groups' },
-        { name: 'Sản phẩm lỗ', link: '/loss-making-products' },
+        { name: 'Kho hàng', link: '/warehouse' },
         { name: 'Bảng giá', link: '/price-lists' },
         { name: 'Giá sản phẩm', link: '/product-prices' },
         { name: 'Quy tắc giao hàng', link: '/delivery-rules' },

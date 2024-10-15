@@ -1,38 +1,61 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom'; 
 import { FaFilter, FaPlus, FaEllipsisV } from 'react-icons/fa';
 import axios from 'axios';
 import Header from '../components/Header';
 import { BsChevronDown } from 'react-icons/bs';
 import moment from 'moment';
 
-const ItemGroupsPage = () => {
+import AddKhoHang from './AddKhoHang';
+
+const KhoHangPage = () => {
   const [filterOptions, setFilterOptions] = useState({
-    tenNhom: '',
+    tenKho: '',
   });
 
-  const [itemGroups, setItemGroups] = useState([]);
+  const [khoHangs, setKhoHangs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedItemGroup, setSelectedItemGroup] = useState(null);
+  const [selectedKhoHang, setSelectedKhoHang] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    const fetchItemGroups = async () => {
+    const fetchKhoHangs = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get('http://localhost:8080/v1/itemgroups');
-        setItemGroups(response.data.data);
+        const response = await axios.get('http://localhost:8080/v1/khohangs');
+        setKhoHangs(response.data.data);
       } catch (error) {
         setError(error);
+        console.error('Lỗi khi lấy danh sách kho hàng:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchItemGroups();
-  }, []);
+    fetchKhoHangs();
+  }, [refreshKey]);
+
+  useEffect(() => {
+    // Kiểm tra xem có dữ liệu kho hàng được truyền từ EditKhoHang hay không
+    if (location.state && location.state.updatedKhoHang) {
+      // Cập nhật danh sách kho hàng
+      setKhoHangs((prevKhoHangs) =>
+        prevKhoHangs.map((khoHang) =>
+          khoHang.id === location.state.updatedKhoHang.id ? location.state.updatedKhoHang : khoHang
+        )
+      );
+
+      // Xóa dữ liệu khỏi location.state
+      navigate(location.pathname, { state: {} }); 
+    }
+  }, [location.state, navigate]);
+
 
   const handleFilterChange = (name, value) => {
     setFilterOptions({
@@ -41,18 +64,18 @@ const ItemGroupsPage = () => {
     });
   };
 
-  const filteredItemGroups = itemGroups.filter((itemGroup) => {
-    const matchesTenNhom =
-      !filterOptions.tenNhom ||
-      itemGroup.tenNhom.toLowerCase().includes(filterOptions.tenNhom.toLowerCase());
+  const filteredKhoHangs = khoHangs.filter((khoHang) => {
+    const matchesTenKho =
+      !filterOptions.tenKho ||
+      khoHang.tenKho.toLowerCase().includes(filterOptions.tenKho.toLowerCase());
 
-    return matchesTenNhom;
+    return matchesTenKho;
   });
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setSelectedItemGroup(null);
+        setSelectedKhoHang(null);
       }
     };
 
@@ -61,18 +84,24 @@ const ItemGroupsPage = () => {
   }, [dropdownRef]);
 
   const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa nhóm hàng này?")) {
+    if (window.confirm('Bạn có chắc chắn muốn xóa kho hàng này?')) {
       try {
-        await axios.delete(`http://localhost:8080/v1/itemgroups/${id}`);
-        // Cập nhật lại danh sách nhóm hàng sau khi xóa
-        const updatedItemGroups = itemGroups.filter((itemGroup) => itemGroup.id !== id);
-        setItemGroups(updatedItemGroups);
+        await axios.delete(`http://localhost:8080/v1/khohangs/${id}`);
+        setKhoHangs(khoHangs.filter((khoHang) => khoHang.id !== id));
       } catch (error) {
-        console.error("Lỗi khi xóa nhóm hàng", error);
-        // Hiển thị thông báo lỗi (ví dụ: alert)
-        alert("Có lỗi xảy ra khi xóa nhóm hàng. Vui lòng thử lại."); 
+        console.error('Lỗi khi xóa kho hàng', error);
+        alert('Có lỗi xảy ra khi xóa kho hàng. Vui lòng thử lại.');
       }
     }
+  };
+
+  const handleEditClick = (khoHang) => {
+    navigate(`/edit-khohang/${khoHang.id}`); 
+  };
+
+  const handleCloseForm = () => {
+    setShowAddForm(false);
+    setRefreshKey(refreshKey + 1); 
   };
 
   return (
@@ -83,39 +112,48 @@ const ItemGroupsPage = () => {
         <div className="w-full bg-white p-6 rounded-lg shadow-md">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-800">
-              Nhóm Hàng
+              Kho Hàng
             </h2>
             <div className="flex">
               <button className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md mr-2 flex items-center transition duration-150 ease-in-out">
                 <FaFilter className="mr-2 text-sm" /> Xem Kiểu Danh Sách
                 <BsChevronDown className="w-4 h-4 ml-2" />
               </button>
-              <Link
-                to="/add-item-group"
+              <button
+                onClick={() => setShowAddForm(true)}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md flex items-center transition duration-150 ease-in-out"
               >
-                <FaPlus className="mr-2 text-sm" /> Thêm Nhóm Hàng
-              </Link>
+                <FaPlus className="mr-2 text-sm" /> Thêm Kho Hàng
+              </button>
             </div>
           </div>
 
+          {/* Form thêm kho hàng */}
+          {showAddForm && (
+            <AddKhoHang
+              onClose={handleCloseForm}
+              onKhoHangAdded={() => {
+                handleCloseForm(); 
+              }}
+            />
+          )}
+
+          {/* Lọc theo tên kho hàng */}
           <div className="mb-4">
-            <label
-              htmlFor="tenNhom"
-              className="block text-sm font-medium text-gray-600"
-            >
-              Tên Nhóm Hàng
+            <label htmlFor="tenKho" className="block text-sm font-medium text-gray-600">
+              Tên Kho Hàng
             </label>
             <input
               type="text"
-              id="tenNhom"
-              name="tenNhom"
+              id="tenKho"
+              name="tenKho"
               className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-              placeholder="Nhập tên nhóm hàng"
-              onChange={(e) => handleFilterChange('tenNhom', e.target.value)}
+              placeholder="Nhập tên kho hàng"
+              onChange={(e) => handleFilterChange('tenKho', e.target.value)}
             />
           </div>
 
+          {/* Bảng danh sách kho hàng */}
           {isLoading ? (
             <div className="text-center py-4">Đang tải dữ liệu...</div>
           ) : error ? (
@@ -137,7 +175,7 @@ const ItemGroupsPage = () => {
                       scope="col"
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
-                      Tên Nhóm Hàng
+                      Tên Kho Hàng
                     </th>
                     <th
                       scope="col"
@@ -152,26 +190,26 @@ const ItemGroupsPage = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredItemGroups.map((itemGroup, index) => (
+                  {filteredKhoHangs.map((khoHang, index) => (
                     <React.Fragment key={index}>
                       <tr
-                        key={itemGroup.id}
+                        key={khoHang.id}
                         className="hover:bg-gray-100"
-                        onClick={() => setSelectedItemGroup(itemGroup)}
+                        onClick={() => setSelectedKhoHang(khoHang)}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {index + 1}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900">
-                          {itemGroup.tenNhom}
+                          {khoHang.tenKho}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
-                          {moment(itemGroup.createdAt).format('DD/MM/YYYY')}
+                          {moment(khoHang.createdAt).format('DD/MM/YYYY')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
                           <button className="text-gray-500 hover:text-gray-700">
                             <FaEllipsisV />
-                            {selectedItemGroup === itemGroup && (
+                            {selectedKhoHang === khoHang && (
                               <div
                                 ref={dropdownRef}
                                 className="absolute top-4 right-0 z-10 w-48 bg-white rounded divide-y divide-gray-100 shadow-lg border border-gray-200"
@@ -179,7 +217,7 @@ const ItemGroupsPage = () => {
                                 <ul className="py-1 text-sm text-gray-700">
                                   <li>
                                     <Link
-                                      to={`/edit-item-group/${itemGroup.id}`}
+                                      to={`/edit-khohang/${khoHang.id}`}
                                       className="block px-4 py-2 hover:bg-gray-100"
                                     >
                                       Chỉnh sửa
@@ -187,10 +225,10 @@ const ItemGroupsPage = () => {
                                   </li>
                                   <li>
                                     <a
-                                      href="#" // Sử dụng href="#" để ngăn chặn chuyển hướng mặc định
+                                      href="#"
                                       onClick={(e) => {
-                                        e.preventDefault(); // Ngăn chặn hành vi mặc định của <a>
-                                        handleDelete(itemGroup.id);
+                                        e.preventDefault();
+                                        handleDelete(khoHang.id);
                                       }}
                                       className="block px-4 py-2 hover:bg-gray-100 text-red-600"
                                     >
@@ -207,9 +245,7 @@ const ItemGroupsPage = () => {
                   ))}
                 </tbody>
               </table>
-              <div className="text-sm text-gray-500 mt-4">
-                Hiển thị {filteredItemGroups.length} nhóm hàng
-              </div>
+              <div className="text-sm text-gray-500 mt-4">Hiển thị {filteredKhoHangs.length} kho hàng</div>
             </div>
           )}
         </div>
@@ -218,4 +254,4 @@ const ItemGroupsPage = () => {
   );
 };
 
-export default ItemGroupsPage;
+export default KhoHangPage;

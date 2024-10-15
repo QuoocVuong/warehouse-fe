@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { FaFileExcel, FaChartBar, FaSyncAlt, FaEllipsisV } from 'react-icons/fa';
 import Header from '../components/Header';
 
 const StockItemsReport = () => {
-  const [tableData, setTableData] = useState([
+  const [tableData] = useState([
     {
       ngay: '02-10-2024 15:06',
       sanPham: '1111: Sắt',
