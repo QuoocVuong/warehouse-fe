@@ -1,71 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import Header from '../components/Header';
-import Footer from '../components/Footer';
 import moment from 'moment';
+import { callGolangAPI } from '../api/auth'; // Import callGolangAPI
 
 const AddProductPage = () => {
-  const [nhomHangs, setNhomHangs] = useState([]);
-  const [formData, setFormData] = useState({
-    maHang: '',
-    nhomHangID: '',
-    tenSanPham: '',
-    donViTinh: '',
-    coPhieuMoDau: 0,
-    dinhGia: 0,
-    tyGiaBanHangTieuChuan: 0,
-    chiDinhLoaiTaiSan: '',
-    hanSuDung: '',
-    status: 'selling',
-  });
-  const [error, setError] = useState(null);
+    const [nhomHangs, setNhomHangs] = useState([]);
+    const [formData, setFormData] = useState({
+        maHang: '',
+        nhomHangID: '', // Lưu trữ ID của nhóm hàng dưới dạng chuỗi
+        tenSanPham: '',
+        donViTinh: '',
+        coPhieuMoDau: 0,
+        dinhGia: 0,
+        tyGiaBanHangTieuChuan: 0,
+        chiDinhLoaiTaiSan: '',
+        hanSuDung: '', // Lưu trữ ngày dưới dạng chuỗi YYYY-MM-DD
+        status: 'selling',
+    });
+    const [error, setError] = useState(null);
 
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchNhomHangs = async () => {
-      try {
-        const response = await axios.get('http://localhost:8080/v1/itemgroups');
-        setNhomHangs(response.data.data);
-      } catch (error) {
-        console.error('Lỗi khi lấy danh sách nhóm hàng:', error);
-      }
+    useEffect(() => {
+        const fetchNhomHangs = async () => {
+            try {
+                const data = await callGolangAPI('itemgroups', {}, 'get'); // Sử dụng callGolangAPI
+                setNhomHangs(data.data);
+            } catch (error) {
+                console.error('Lỗi khi lấy danh sách nhóm hàng:', error);
+            }
+        };
+
+        fetchNhomHangs();
+    }, []);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+
+        // Xử lý trường hợp name là number
+        let newValue = value;
+
+        // Chuyển đổi giá trị sang đúng kiểu dữ liệu
+        if (name === "coPhieuMoDau" || name === "dinhGia" || name === "tyGiaBanHangTieuChuan") {
+          if (value === '') {
+            newValue = 0; // Hoặc để trống nếu bạn muốn cho phép giá trị rỗng
+          } else {
+            newValue = parseFloat(value);
+            if (isNaN(newValue)) {
+              newValue = 0; // Hoặc xử lý lỗi khác nếu cần
+            }
+          }
+        } else if (name === 'nhomHangID') {
+          newValue = value.toString(); // Chuyển đổi nhomHangID thành chuỗi
+        }
+        if (name === "nhomHangID") {
+          newValue = parseInt(value, 10) || ""; // Chuyển đổi thành số hoặc chuỗi rỗng nếu không parse được
+        }
+
+
+        setFormData({ ...formData, [name]: newValue });
     };
 
-    fetchNhomHangs();
-  }, []);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
 
-    try {
-       // Format HanSuDung sang định dạng ISO 8601
-       const formattedHanSuDung = moment(formData.hanSuDung).format('YYYY-MM-DDTHH:mm:ssZ');
-       const parsedNhomHangID = parseInt(formData.nhomHangID, 10);
-       const parsedCoPhieuMoDau = parseFloat(formData.coPhieuMoDau);
-       const parsedDinhGia = parseFloat(formData.dinhGia);
-       const parsedTyGiaBanHangTieuChuan = parseFloat(formData.tyGiaBanHangTieuChuan);
-      await axios.post('http://localhost:8080/v1/products', {
-         ...formData,
-        nhomHangID: parsedNhomHangID,
-        coPhieuMoDau: parsedCoPhieuMoDau, 
-        dinhGia: parsedDinhGia, 
-        tyGiaBanHangTieuChuan: parsedTyGiaBanHangTieuChuan,
-        hanSuDung: formattedHanSuDung,
-      });
-      navigate('/products');
-    } catch (error) {
-      console.error('Lỗi khi thêm sản phẩm:', error);
-      setError(error.response?.data?.error || 'Lỗi khi thêm sản phẩm.');
-    }
-  };
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError(null);
+
+        try {
+            // Format HanSuDung sang định dạng ISO 8601 nếu cần
+            const formattedHanSuDung = moment(formData.hanSuDung).format('YYYY-MM-DDTHH:mm:ssZ');
+            // const parsedNhomHangID = parseInt(formData.nhomHangID, 10);
+            const parsedCoPhieuMoDau = parseFloat(formData.coPhieuMoDau);
+            const parsedDinhGia = parseFloat(formData.dinhGia);
+            const parsedTyGiaBanHangTieuChuan = parseFloat(formData.tyGiaBanHangTieuChuan);
+           
+
+            // Gửi dữ liệu lên backend bằng callGolangAPI
+            await callGolangAPI('products', { ...formData, hanSuDung: formattedHanSuDung }, 'post', {
+              ...formData,
+            //  nhomHangID: parsedNhomHangID,
+             coPhieuMoDau: parsedCoPhieuMoDau, 
+             dinhGia: parsedDinhGia, 
+             tyGiaBanHangTieuChuan: parsedTyGiaBanHangTieuChuan,
+             hanSuDung: formattedHanSuDung,
+           });
+            navigate('/products');
+        } catch (error) {
+            console.error('Lỗi khi thêm sản phẩm:', error);
+            setError(error.response?.data?.error || 'Lỗi khi thêm sản phẩm.');
+        }
+    };
 
   return (
     <div className="flex flex-col min-h-screen mx-auto max-w-[1200px] bg-gray-100">

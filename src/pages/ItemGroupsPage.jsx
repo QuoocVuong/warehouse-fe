@@ -5,6 +5,7 @@ import axios from 'axios';
 import Header from '../components/Header';
 import { BsChevronDown } from 'react-icons/bs';
 import moment from 'moment';
+import { callGolangAPI } from '../api/auth';
 
 const ItemGroupsPage = () => {
   const [filterOptions, setFilterOptions] = useState({
@@ -15,24 +16,26 @@ const ItemGroupsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedItemGroup, setSelectedItemGroup] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(null);
 
   const dropdownRef = useRef(null);
 
   useEffect(() => {
     const fetchItemGroups = async () => {
-      setIsLoading(true);
-      try {
-        const response = await axios.get('http://localhost:8080/v1/itemgroups');
-        setItemGroups(response.data.data);
-      } catch (error) {
-        setError(error);
-      } finally {
-        setIsLoading(false);
-      }
+        setIsLoading(true);
+        try {
+            const data = await callGolangAPI('itemgroups', {}, 'get');
+            setItemGroups(data.data);
+        } catch (error) {
+            setError(error);
+            console.error("Error fetching item groups:", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     fetchItemGroups();
-  }, []);
+}, []);
 
   const handleFilterChange = (name, value) => {
     setFilterOptions({
@@ -49,32 +52,33 @@ const ItemGroupsPage = () => {
     return matchesTenNhom;
   });
 
+  const handleDropdownToggle = (itemGroupId) => {
+    setShowDropdown(showDropdown === itemGroupId ? null : itemGroupId);
+    };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setSelectedItemGroup(null);
-      }
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            setShowDropdown(null); // Đóng dropdown khi click bên ngoài
+        }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [dropdownRef]);
+}, []);
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa nhóm hàng này?")) {
+const handleDelete = async (id) => {
+  if (window.confirm("Bạn có chắc chắn muốn xóa nhóm hàng này?")) {
       try {
-        await axios.delete(`http://localhost:8080/v1/itemgroups/${id}`);
-        // Cập nhật lại danh sách nhóm hàng sau khi xóa
-        const updatedItemGroups = itemGroups.filter((itemGroup) => itemGroup.id !== id);
-        setItemGroups(updatedItemGroups);
+          await callGolangAPI(`itemgroups/${id}`, {}, 'delete'); // Sử dụng callGolangAPI
+          setItemGroups(prevItemGroups => prevItemGroups.filter(itemGroup => itemGroup.id !== id));
+          setShowDropdown(null); // Đóng dropdown sau khi xóa
       } catch (error) {
-        console.error("Lỗi khi xóa nhóm hàng", error);
-        // Hiển thị thông báo lỗi (ví dụ: alert)
-        alert("Có lỗi xảy ra khi xóa nhóm hàng. Vui lòng thử lại."); 
+          console.error("Lỗi khi xóa nhóm hàng", error);
+          alert("Có lỗi xảy ra khi xóa nhóm hàng. Vui lòng thử lại.");
       }
-    }
-  };
-
+  }
+};
   return (
     <div className="flex flex-col min-h-screen mx-auto max-w-[1200px] bg-gray-100">
       <Header />
@@ -169,12 +173,15 @@ const ItemGroupsPage = () => {
                           {moment(itemGroup.createdAt).format('DD/MM/YYYY')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
-                          <button className="text-gray-500 hover:text-gray-700">
+                          <button className="text-gray-500 hover:text-gray-700"
+                                            onClick={() => handleDropdownToggle(itemGroup.id)} // Gọi handleDropdownToggle
+                                            ref={showDropdown === itemGroup.id ? dropdownRef : null}
+                          >
                             <FaEllipsisV />
-                            {selectedItemGroup === itemGroup && (
+                            {showDropdown === itemGroup.id &&  (
                               <div
                                 ref={dropdownRef}
-                                className="absolute top-4 right-0 z-10 w-48 bg-white rounded divide-y divide-gray-100 shadow-lg border border-gray-200"
+                                className="absolute top-4 right-0 z-10 w-48 bg-white rounded divide-y divide-gray-100 shadow-lg border border-gray-200 ref={dropdownRef}"
                               >
                                 <ul className="py-1 text-sm text-gray-700">
                                   <li>

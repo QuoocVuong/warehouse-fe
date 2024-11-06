@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { FaFilter, FaPlus, FaEllipsisV, FaChevronRight, FaChevronLeft, FaCaretDown } from 'react-icons/fa';
-import axios from 'axios';
+import { FaPlus, FaCaretDown, FaEllipsisV } from 'react-icons/fa';
+
 import Header from '../components/Header';
-import { BsChevronDown } from 'react-icons/bs';
+
 import moment from 'moment';
+import { callGolangAPI } from '../api/auth';
 
 const ProductsPage = () => {
   const [filterOptions, setFilterOptions] = useState({
@@ -23,6 +24,12 @@ const ProductsPage = () => {
   const handleDropdownToggle = (productId) => {
     setShowDropdown(showDropdown === productId ? null : productId);
   };
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+});
+
 
 
   const dropdownRef = useRef(null);
@@ -31,27 +38,56 @@ const ProductsPage = () => {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get('http://localhost:8080/v1/products');
-        setProducts(response.data.data);
+          const params = { ...filterOptions, page: pagination.page, limit: pagination.limit };
+          const data = await callGolangAPI('products', params, 'get'); // Sử dụng callGolangAPI
+
+          if (data.data && data.paging) {
+              setProducts(data.data);
+              setPagination((prevPagination) => ({
+                  ...prevPagination,
+                  total: data.paging.total,
+              }));
+          } else {
+              throw new Error("Invalid data format from API");
+          }
       } catch (error) {
-        setError(error);
+          setError(error);
+          console.error("Error fetching products:", error);
       } finally {
-        setIsLoading(false);
+          setIsLoading(false);
       }
-    };
+  };
 
-    const fetchNhomHangs = async () => {
+  const fetchNhomHangs = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/v1/itemgroups');
-        setAllNhomHangs(response.data.data);
+          const data = await callGolangAPI('itemgroups', {}, 'get'); // Sử dụng callGolangAPI
+          setAllNhomHangs(data.data);
       } catch (error) {
-        console.error('Lỗi khi lấy danh sách nhóm hàng:', error);
+          console.error('Lỗi khi lấy danh sách nhóm hàng:', error);
       }
-    };
+  };
 
-    fetchProducts();
-    fetchNhomHangs();
-  }, []);
+
+  fetchProducts();
+  fetchNhomHangs();
+}, [pagination.page, pagination.limit, filterOptions]);
+
+const handleDeleteProduct = async (productId) => {
+  if (window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+      try {
+          await callGolangAPI(`products/${productId}`, {}, 'delete'); // Sử dụng callGolangAPI
+
+          setProducts((prevProducts) =>
+              prevProducts.filter((product) => product.id !== productId)
+          );
+          setShowDropdown(null);
+          setPagination(prev => ({ ...prev, total: prev.total - 1 }));
+      } catch (error) {
+          console.error('Lỗi khi xóa sản phẩm:', error);
+          alert('Có lỗi xảy ra khi xóa sản phẩm. Vui lòng thử lại.');
+      }
+  }
+};
 
   const handleFilterChange = (name, value) => {
     setFilterOptions({
@@ -65,57 +101,22 @@ const ProductsPage = () => {
     const matchesStatus = !filterOptions.status || product.status === filterOptions.status;
     const matchesNhomHang = !filterOptions.tenNhom || (product.nhomHang && product.nhomHang.tenNhom === filterOptions.tenNhom);
 
-    return matchesTenSanPham && matchesStatus && matchesNhomHang;
+    const isNotDeleted = product.status !== "deleted";
+    return matchesTenSanPham && matchesStatus && matchesNhomHang && isNotDeleted;
   });
+
+ 
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setSelectedProduct(null);
-      }
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            setShowDropdown(null); // Đóng dropdown khi click bên ngoài
+        }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [dropdownRef]);
-  const handleDeleteProduct = async (productId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
-      try {
-        await axios.delete(`http://localhost:8080/v1/products/${productId}`);
-
-        // Cập nhật trực tiếp trạng thái sản phẩm trong mảng `products`
-        setProducts((prevProducts) => prevProducts.map((product) => 
-          product.id === productId ? { ...product, status: 'deleted' } : product
-        ));
-
-        setShowDropdown(null);
-      } catch (error) {
-        console.error('Lỗi khi xóa sản phẩm:', error);
-        alert('Có lỗi xảy ra khi xóa sản phẩm. Vui lòng thử lại.');
-      }
-    }
-  };
-  // const handleDeleteProduct = async (productId) => {
-  //   if (window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
-  //     try {
-  //       await axios.delete(`http://localhost:8080/v1/products/${productId}`);
-  
-  //       // Gọi lại API để lấy danh sách sản phẩm mới nhất
-  //       const response = await axios.get('http://localhost:8080/v1/products');
-  //       setProducts(response.data.data);
-  
-  //       setShowDropdown(null);
-  //     } catch (error) {
-  //       console.error('Lỗi khi xóa sản phẩm:', error);
-  //       alert('Có lỗi xảy ra khi xóa sản phẩm. Vui lòng thử lại.');
-  //     }
-  //   }
-  // };
-
-  // Thêm useEffect để re-render khi products thay đổi
-  useEffect(() => {
-    // Không cần code gì trong useEffect, chỉ cần dependency là products
-  }, [products]);
+}, []);
 
 
   return (
@@ -203,8 +204,10 @@ const ProductsPage = () => {
               <table className="w-full whitespace-nowrap bg-white divide-y divide-gray-200 rounded-lg shadow-md">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="relative px-6 py-3">
-                      <span className="sr-only">Edit</span>
+                    <th scope="col" 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Edit
                     </th>
                     <th
                       scope="col"
@@ -280,14 +283,14 @@ const ProductsPage = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
                           <button
                             onClick={() => handleDropdownToggle(product.id)}
-                            className={`text-gray-400 hover:text-gray-500 ${showDropdown === product.id ? 'text-blue-500' : ''}`}
+                            className="text-gray-400 hover:text-gray-500 ref={showDropdown === itemGroup.id ? dropdownRef : null}"
                           >
-                            <FaCaretDown className="w-5 h-5" />
+                            <FaEllipsisV className="w-5 h-5" />
                           </button>
 
                           {/* Dropdown */}
                           {showDropdown === product.id && (
-                            <div className="absolute left-9 transform  rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                            <div className="absolute left-12 top-0 transform  rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" ref={dropdownRef}>
                               <div
                                 className="py-1"
                                 role="menu"
@@ -346,7 +349,7 @@ const ProductsPage = () => {
                           {product.tyGiaBanHangTieuChuan}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
-                          {product.chiDinhLoaiTaiSan}
+                          {product.ChiDinhLoaiTaiSan}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {product.hanSuDung
