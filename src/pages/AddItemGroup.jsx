@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { callGolangAPI } from '../api/auth'; // Import callGolangAPI
 
 const AddItemGroup = () => {
   const [tenNhom, setTenNhom] = useState('');
@@ -11,22 +11,18 @@ const AddItemGroup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError(null); // Reset error message
+    setError(null);
 
     try {
-      const response = await axios.post('http://localhost:8080/v1/itemgroups', {
-        tenNhom,
-      });
-
-      if (response.status === 201) {
-        // Redirect to Item Groups page after successful creation
-        navigate('/item-groups'); 
-      } else {
-        setError('Có lỗi xảy ra. Vui lòng thử lại sau!');
-      }
+      await callGolangAPI('itemgroups', { tenNhom }, 'post');
+      navigate('/item-groups');
     } catch (error) {
-      setError('Có lỗi xảy ra. Vui lòng thử lại sau!');
       console.error('Lỗi khi thêm nhóm hàng:', error);
+      if (error.response && error.response.data && error.response.data.error) {
+        setError(error.response.data.error); 
+      } else {
+        setError('Lỗi khi thêm nhóm hàng.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -37,8 +33,7 @@ const AddItemGroup = () => {
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
 
-        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
-        </span>
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true"></span>
 
         <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
@@ -68,7 +63,7 @@ const AddItemGroup = () => {
                       <button
                         type="button"
                         className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md mr-2"
-                        onClick={() => navigate(-1)} // Sử dụng navigate(-1) để quay lại trang trước
+                        onClick={() => navigate(-1)} 
                       >
                         Hủy
                       </button>

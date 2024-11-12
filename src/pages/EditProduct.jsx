@@ -14,33 +14,36 @@ const EditProductPage = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const fetchProduct = async () => {
-            setIsLoading(true);
-            try {
-                const response = await callGolangAPI(`products/${id}`, {}, 'get');
-              // Kiểm tra xem dữ liệu phản hồi có đúng định dạng không
-              console.log(response)
-              if (response && typeof response.data === 'object') {
-                const productData = response.data;
-
-                // Định dạng ngày và đảm bảo nhomHangID là chuỗi CHỈ KHI productData là một đối tượng
-                if (productData.hanSuDung) {
-                    productData.hanSuDung = moment(productData.hanSuDung).format('YYYY-MM-DD');
-                }
-                productData.nhomHangID = productData.nhomHangID ? productData.nhomHangID.toString() : "";
-
-                setFormData(productData);
-            } else {
-                throw new Error("Dữ liệu sản phẩm nhận được từ API không hợp lệ.");
+      const fetchProduct = async () => {
+        setIsLoading(true);
+        try {
+            const response = await callGolangAPI(`products/${id}`, {}, 'get');
+            if (!response || !response.data || typeof response.data !== 'object') {
+                throw new Error("Invalid product data received from API");
             }
+
+            const productData = response.data;
+
+            // Chuyển đổi nhomHangID sang số nếu nó tồn tại
+            const parsedNhomHangID = productData.nhomHangID ? parseInt(productData.nhomHangID, 10) : null;
+            productData.nhomHangID = parsedNhomHangID;
+
+             // Định dạng ngày
+            if (productData.hanSuDung) {
+                productData.hanSuDung = moment(productData.hanSuDung).format('YYYY-MM-DD');
+            }
+
+
+
+            setFormData(productData);
+
         } catch (error) {
-            console.error('Lỗi khi lấy sản phẩm:', error);
-            setError(error.message); // Gán toàn bộ thông báo lỗi
+            console.error('Error fetching product:', error);
+            setError(error.message);
         } finally {
             setIsLoading(false);
         }
     };
-
         const fetchNhomHangs = async () => {
             try {
                 const data = await callGolangAPI('itemgroups', {}, 'get');
@@ -56,54 +59,62 @@ const EditProductPage = () => {
 
    
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        let newValue = value;
-    
-        if (name === "coPhieuMoDau" || name === "dinhGia" || name === "tyGiaBanHangTieuChuan") {
-          newValue = value === "" ? 0 : parseFloat(value); // Xử lý chuỗi rỗng
-          if (isNaN(newValue)) {
-            newValue = 0; // Hoặc hiển thị thông báo lỗi
-            console.error(`Giá trị không hợp lệ cho ${name}: ${value}`);
-          }
-        } else if (name === "nhomHangID") {
-            newValue = parseInt(value, 10); // Parse thành số nguyên
-            console.log("New value for nhomHangID:", newValue, typeof newValue)
-            if (isNaN(newValue)) {
-               newValue = null; // Hoặc 0, tùy thuộc vào cách bạn muốn xử lý trường hợp không hợp lệ
-             }
-          }
-    
-        setFormData(prevData => ({ ...prevData, [name]: newValue })); // Cập nhật state đúng cách
-      };
+      const { name, value } = e.target;
+      let newValue = value;
 
-      const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError(null);
-    
-        try {
-            const updatedData = { ...formData };
-            updatedData.coPhieuMoDau = formData.coPhieuMoDau.toString(); // Chuyển thành chuỗi
-            updatedData.dinhGia = formData.dinhGia.toString();       // Chuyển thành chuỗi
-            updatedData.tyGiaBanHangTieuChuan = formData.tyGiaBanHangTieuChuan.toString();
-    
-          // Format HanSuDung sang định dạng ISO 8601 nếu cần
-          updatedData.hanSuDung = moment(formData.hanSuDung).format('YYYY-MM-DDTHH:mm:ssZ');
-          
-          // Sửa lại tên trường cho phù hợp với backend
-          if (updatedData.ChiDinhLoaiTaiSan) {
-            updatedData.chiDinhLoaiTaiSan = updatedData.ChiDinhLoaiTaiSan;
-            delete updatedData.ChiDinhLoaiTaiSan; 
+      if (name === "nhomHangID") {
+          newValue = parseInt(value, 10);
+          if (isNaN(newValue)) {
+              newValue = null; // Hoặc 0, tùy thuộc vào backend
           }
-          console.log("Data before sending:", updatedData)
-    
-          await callGolangAPI(`products/${id}`, updatedData, 'patch'); // Sửa endpoint và method
-          navigate('/products');
-        } catch (error) {
-          console.error('Lỗi khi sửa sản phẩm:', error);
-          // Hiển thị thông báo lỗi chi tiết hơn từ backend nếu có
-          setError(error.response?.data?.error || 'Lỗi khi sửa sản phẩm.');
+      } else if (name === "coPhieuMoDau" || name === "dinhGia" || name === "tyGiaBanHangTieuChuan") {
+          newValue = parseFloat(value);
+          if (isNaN(newValue)) {
+            newValue = 0; 
+          }
         }
-      };
+        else if(name === "hanSuDung") {
+          newValue = moment(value).format('YYYY-MM-DDTHH:mm:ssZ');
+          console.log("hansudung",newValue)
+
+        }
+
+
+      setFormData(prevData => ({ ...prevData, [name]: newValue }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    try {
+        const updatedData = { ...formData };
+         // Chuyển đổi các trường số thành chuỗi nếu cần thiết bởi backend
+         if (typeof updatedData.coPhieuMoDau === 'number') {
+            updatedData.coPhieuMoDau = updatedData.coPhieuMoDau.toString();
+        }
+        if (typeof updatedData.dinhGia === 'number') {
+            updatedData.dinhGia = updatedData.dinhGia.toString();
+        }
+        if (typeof updatedData.tyGiaBanHangTieuChuan === 'number') {
+            updatedData.tyGiaBanHangTieuChuan = updatedData.tyGiaBanHangTieuChuan.toString();
+        }
+        
+
+        if (updatedData.ChiDinhLoaiTaiSan) {
+            updatedData.chiDinhLoaiTaiSan = updatedData.ChiDinhLoaiTaiSan;
+            delete updatedData.ChiDinhLoaiTaiSan;
+        }
+
+        console.log("Data before sending:", updatedData); // Kiểm tra dữ liệu trước khi gửi
+
+        await callGolangAPI(`products/${id}`, updatedData, 'patch');
+        navigate('/products');
+    } catch (error) {
+        console.error('Error updating product:', error);
+        setError(error.response?.data?.error || 'Error updating product.');
+    }
+};
 
     if (isLoading) {
         return <div>Loading...</div>;
@@ -292,7 +303,7 @@ const EditProductPage = () => {
     >
         <option value="selling">selling</option>
         <option value="out_of_stock">out_of_stock</option>
-        <option value="deleted">deleted</option>
+        
 
     </select>
 </div>

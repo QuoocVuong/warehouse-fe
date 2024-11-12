@@ -4,6 +4,17 @@ const IDENTITY_SERVICE_URL = 'http://localhost:8081/identity';
 const GOLANG_API_URL = 'http://localhost:8080/v1';
 
 
+export const isTokenExpired = (token) => {
+    try {
+      const decodedToken = JSON.parse(atob(token.split('.')[1])); // Giả sử token là JWT
+      const expirationTime = decodedToken.exp * 1000; // Thời gian hết hạn (mili giây)
+  
+      return Date.now() > expirationTime;
+    } catch (error) {
+      return true; // Giả sử token không hợp lệ
+    }
+  };
+
 const register = async (userData) => {
     try {
         console.log("Data being sent:", userData); // Kiểm tra dữ liệu gửi đi
@@ -67,8 +78,47 @@ const login = async (username, password) => {
     }
 };
 
+const callIdentityAPI = async (endpoint, params = {}, method = 'get') => {
+    try {
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const url = new URL(`${IDENTITY_SERVICE_URL}/${endpoint}`);
+
+        if (method === 'get') {
+            for (const key in params) {
+                if (Object.hasOwn(params, key) && params[key] !== undefined && params[key] !== null && params[key] !== '') {
+                    url.searchParams.append(key, params[key]);
+                }
+            }
+        }
+
+        const response = await axios({
+            method,
+            url: url.toString(),
+            headers: {
+                ...headers,
+                'Content-Type': method !== 'get' ? 'application/json' : undefined,
+            },
+            data: method !== 'get' ? params : undefined,
+        });
+
+        return response.data; // Trả về dữ liệu từ response
 
 
+    } catch (error) {
+        console.error('Error calling Identity API:', error); // Sửa thông báo lỗi
+
+        if (error.response && error.response.status === 401) {
+            localStorage.removeItem("token");
+            window.location.href = '/login';
+        } else if (error.response) {
+            console.log(error.response.data.message); // Log thông báo lỗi từ server
+        }
+       
+        throw error; // Ném lỗi để component xử lý
+
+    }
+};
 const callGolangAPI = async (endpoint, params = {}, method = 'get') => {
     try {
         const token = localStorage.getItem('token');
@@ -134,4 +184,4 @@ const isLoggedIn = () => {
     return !!localStorage.getItem('token');
 };
 
-export { login, logout, callGolangAPI, isLoggedIn };
+export { login, logout, callGolangAPI, isLoggedIn, callIdentityAPI };

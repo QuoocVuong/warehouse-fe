@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { FaPlus, FaCaretDown, FaEllipsisV } from 'react-icons/fa';
+import { FaPlus, FaEllipsisV } from 'react-icons/fa';
 
 import Header from '../components/Header';
 
@@ -130,7 +130,7 @@ const handleDeleteProduct = async (productId) => {
             <h2 className="text-xl font-semibold text-gray-800">Sản phẩm</h2>
             {/* Nút thêm sản phẩm */}
             <Link
-              to="/add-product"
+              to="/add-product-page"
               className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md flex items-center transition duration-150 ease-in-out"
             >
               <FaPlus className="mr-2 text-sm" /> Thêm Sản phẩm
@@ -168,7 +168,7 @@ const handleDeleteProduct = async (productId) => {
                 <option value="">Tất cả</option>
                 <option value="selling">Đang bán</option>
                 <option value="out_of_stock">Hết hàng</option>
-                <option value="deleted">Đã xóa</option>
+               
               </select>
             </div>
 
@@ -298,7 +298,7 @@ const handleDeleteProduct = async (productId) => {
                                 aria-labelledby="options-menu"
                               >
                                 <Link
-                                  to={`/edit-product/${product.id}`}
+                                  to={`/edit-product-page/${product.id}`}
                                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                                   role="menuitem"
                                 >

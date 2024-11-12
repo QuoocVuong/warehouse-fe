@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import Header from '../components/Header'; // Import component Header 
+import { callGolangAPI } from '../api/auth'; // Import callGolangAPI
+import Header from '../components/Header';
+
 
 const EditItemGroup = () => {
   const { id } = useParams();
@@ -14,10 +15,14 @@ const EditItemGroup = () => {
     const fetchItemGroup = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get(`http://localhost:8080/v1/itemgroups/${id}`);
-        setTenNhom(response.data.data.tenNhom);
+        const response = await callGolangAPI(`itemgroups/${id}`, {}, 'get'); // Use callGolangAPI
+        if (response && response.data && response.data.tenNhom) { // Check for data existence
+            setTenNhom(response.data.tenNhom);
+        } else {
+            throw new Error("Invalid item group data received from API");
+        }
       } catch (error) {
-        setError('Lỗi khi lấy thông tin nhóm hàng');
+        setError('Lỗi khi lấy thông tin nhóm hàng: ' + error.message); // Show more detailed error
         console.error(error);
       } finally {
         setIsLoading(false);
@@ -30,10 +35,10 @@ const EditItemGroup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.patch(`http://localhost:8080/v1/itemgroups/${id}`, { tenNhom });
+      await callGolangAPI(`itemgroups/${id}`, { tenNhom }, 'patch'); // Use callGolangAPI
       navigate('/item-groups');
     } catch (error) {
-      setError('Lỗi khi cập nhật nhóm hàng');
+      setError('Lỗi khi cập nhật nhóm hàng: ' + error.message); // Show detailed error
       console.error(error);
     }
   };

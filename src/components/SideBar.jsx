@@ -77,12 +77,9 @@ const SideBar = () => {
 
       {/* Sidebar */}
       <div
-        className={`bg-white  rounded-lg w-64 transition-transform duration-300 ease-in-out hover:scale-105 fixed top-16 left-0 h-screen z-10 ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:relative md:translate-x-0 md:h-auto`}
-        style={{
-          boxShadow: '10px 0 15px -3px rgba(0,0,0,0.1), 10px 0 20px -2px rgba(0,0,0,0.05)' 
-        }}
+      className={`bg-white rounded-lg w-64 transition-transform duration-300 ease-in-out hover:scale-105  h-fit  z-10
+        md:relative md:translate-x-0 md:h-auto`} // Thay đổi h-screen thành h-fit, bỏ fixed và top-16
+     
       >
         {/* Bộ phận */}
         <h3 className="text-gray-600 uppercase text-sm font-semibold px-4 py-3 mt-8">Bộ Phận</h3>

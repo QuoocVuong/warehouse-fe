@@ -1,10 +1,10 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet,  useNavigate } from 'react-router-dom';
 import Home from './pages/Home';
 import ProductsPage from './pages/ProductsPage';
-import AddProduct from './pages/AddProduct';
+// import AddProduct from './pages/AddProduct';
 import ItemGroupsPage from './pages/ItemGroupsPage';
 import StockItemsReport from './pages/StockItemsReport';
-import EditProduct from './pages/EditProduct';
+// import EditProduct from './pages/EditProduct';
 import DeleteProduct from './pages/DeleteProduct';
 import AddItemGroup from './pages/AddItemGroup';
 import EditItemGroup from './pages/EditItemGroup';
@@ -13,8 +13,13 @@ import KhoHangPage from './pages/KhoHangPage';
 import AddKhoHang from './pages/AddKhoHang';
 import EditKhoHang from './pages/EditKhoHang';
 import LoginForm from './pages/LoginForm'; // Import LoginForm
-import { isLoggedIn } from './api/auth'; // Import isLoggedIn
+
 import RegisterForm from './pages/RegisterForm'; 
+import PersonalInfo from './pages/PersonalInfo';
+import { isLoggedIn} from './api/auth';
+import EditProductpage from './pages/EditProductPage';
+import AddProductPage from './pages/AddProductPage';
+
 
 
 // Hàm kiểm tra đăng nhập, nếu chưa đăng nhập thì chuyển hướng sang trang `/login`
@@ -24,6 +29,10 @@ const ProtectedRoute = () => {
     }
     return <Outlet />;
 }
+
+
+
+
 
 
 function App() {
@@ -38,25 +47,25 @@ function App() {
                      <Route path="/register" element={<RegisterForm />} />
 
 
-
-
-                    <Route path="/login" element={<LoginForm />} />
-
                     <Route element={<ProtectedRoute/>}> {/*  */}
 
                         <Route path="/" element={<Home />} />
                         <Route path="/products" element={<ProductsPage />} />
-                        <Route path="/add-product" element={<AddProduct />} />
+                        {/* <Route path="/add-product" element={<AddProduct />} /> */}
                         <Route path="/item-groups" element={<ItemGroupsPage />} />
                         <Route path="/stock-items-report" element={<StockItemsReport />} />
-                        <Route path="/edit-product/:id" element={<EditProduct />} />
+                        {/* <Route path="/edit-product/:id" element={<EditProduct />} /> */}
                         <Route path="/delete-product/:id" element={<DeleteProduct />} />
                         <Route path="/add-item-group" element={<AddItemGroup />} />
                         <Route path="/edit-item-group/:id" element={<EditItemGroup />} />
                         <Route path="/delete-item-group/:id" element={<DeleteItemGroup />} />
                         <Route path="/warehouse" element={<KhoHangPage />} />
                         <Route path="/add-khohang" element={<AddKhoHang />} />
-                        <Route path="/edit-khohang/:id" element={<EditKhoHang />} />
+                        <Route path="/edit-khohang/:id" element={<EditKhoHang />} /> 
+                        <Route path="/profile" element={<PersonalInfo />} /> 
+
+                        <Route path="/edit-product-page/:id" element={<EditProductpage />} />
+                        <Route path="/add-product-page" element={<AddProductPage />} />
 
 
                     </Route>

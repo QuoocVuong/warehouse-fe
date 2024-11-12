@@ -57,7 +57,7 @@ const Chart = () => {
   }, [activeIndex]);
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md relative">
+    <div className="bg-white p-4 rounded-lg d relative shadow-md">
       <div className="flex justify-between items-start mb-2">
         <h2 className="text-lg font-semibold text-gray-800">
           Warehouse wise Stock Value
